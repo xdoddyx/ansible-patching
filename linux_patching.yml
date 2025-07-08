@@ -41,12 +41,6 @@
         state: latest
       when: ansible_os_family == "RedHat"
 
-    - name: Update all packages (SUSE)
-      ansible.builtin.zypper:
-        name: "*"
-        state: latest
-      when: ansible_os_family == "Suse"
-
     - name: Check if reboot is required after patching (Linux)
       ansible.builtin.stat:
         path: /var/run/reboot-required

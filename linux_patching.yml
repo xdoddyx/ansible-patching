@@ -1,0 +1,95 @@
+---
+- name: Apply Linux Patches and Reboot if necessary
+  hosts: linux_servers # Or a specific group from your inventory
+  gather_facts: true # Gather facts to determine OS and reboot status
+  become: true # Run tasks with elevated privileges (sudo)
+
+  pre_tasks:
+    - name: Record start time
+      set_fact:
+        patch_start_time: "{{ ansible_date_time.iso8601 }}"
+      run_once: true # Only run once if multiple hosts are in scope
+
+    - name: Pause monitoring (optional) - Placeholder
+      debug:
+        msg: "Pausing monitoring for {{ inventory_hostname }}"
+      # Implement actual monitoring integration here (e.g., using API calls to your monitoring system)
+
+    - name: Check for existing reboots required (before patching)
+      shell: "needs-restarting -r || echo 'No reboot required'"
+      register: reboot_check_pre
+      failed_when: false
+      changed_when: false
+      when: ansible_os_family == "RedHat" # Example for RHEL/CentOS
+      ignore_errors: true # Continue even if command fails on non-compatible systems
+
+    - name: Get current kernel version (before patching)
+      shell: "uname -r"
+      register: kernel_version_pre
+      changed_when: false
+
+  tasks:
+    - name: Update all packages (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_os_family == "Debian"
+
+    - name: Update all packages (RedHat/CentOS)
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+      when: ansible_os_family == "RedHat"
+
+    - name: Update all packages (SUSE)
+      ansible.builtin.zypper:
+        name: "*"
+        state: latest
+      when: ansible_os_family == "Suse"
+
+    - name: Check if reboot is required after patching (Linux)
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+      when: ansible_os_family == "Debian"
+
+    - name: Check for existing reboots required (after patching) - RedHat
+      shell: "needs-restarting -r || echo 'No reboot required'"
+      register: reboot_check_post
+      failed_when: false
+      changed_when: false
+      when: ansible_os_family == "RedHat"
+
+    - name: Get current kernel version (after patching)
+      shell: "uname -r"
+      register: kernel_version_post
+      changed_when: false
+
+    - name: Reboot if necessary (Linux)
+      ansible.builtin.reboot:
+        reboot_timeout: 600 # Wait up to 10 minutes for reboot
+      when: (ansible_os_family == "Debian" and reboot_required_file.stat.exists) or \
+            (ansible_os_family == "RedHat" and "Reboot is required" in reboot_check_post.stdout) or \
+            (kernel_version_pre.stdout != kernel_version_post.stdout) # Reboot if kernel changed
+
+  post_tasks:
+    - name: Wait for server to be reachable after reboot (if performed)
+      ansible.builtin.wait_for_connection:
+        timeout: 600
+      when: (ansible_os_family == "Debian" and reboot_required_file.stat.exists) or \
+            (ansible_os_family == "RedHat" and "Reboot is required" in reboot_check_post.stdout) or \
+            (kernel_version_pre.stdout != kernel_version_post.stdout)
+
+    - name: Resume monitoring (optional) - Placeholder
+      debug:
+        msg: "Resuming monitoring for {{ inventory_hostname }}"
+      # Implement actual monitoring integration here
+
+    - name: Record end time and status (Placeholder for reporting)
+      set_fact:
+        patch_end_time: "{{ ansible_date_time.iso8601 }}"
+      run_once: true
+
+    - name: Generate patch report (Placeholder for reporting)
+      debug:
+        msg: "Patching of {{ inventory_hostname }} completed from {{ patch_start_time }} to {{ patch_end_time }}. Reboot required: {{ (ansible_os_family == 'Debian' and reboot_required_file.stat.exists) or (ansible_os_family == 'RedHat' and 'Reboot is required' in reboot_check_post.stdout) or (kernel_version_pre.stdout != kernel_version_post.stdout) }}"

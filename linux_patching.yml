@@ -8,4 +8,4 @@
       ansible.builtin.ping:
     - name: Print OS information
       debug:
-        msg: "Host {{ inventory_hostname }} is running {{ ansible_distribution }} {{ ansible_distribution_version }} ({{ ansible_distribution_release }})"
+        msg: "Host {{ inventory_hostname }} is running {{ ansible_distribution }} {{ ansible_distribution_version }}"

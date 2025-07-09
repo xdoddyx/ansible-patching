@@ -1,7 +1,6 @@
 ---
 - hosts: linuxservers
   become: true
-  gather_facts: true
 
   tasks:
     - name: Ping Host

@@ -1,10 +1,26 @@
 ---
 - hosts: linuxservers
   become: true
+  gather_facts: true
+
   tasks:
-    - name: Update all host/vm packages
+
+    - name: Ensure python3-apt is installed on Debian/Ubuntu
+      ansible.builtin.apt:
+        name: python3-apt
+        state: present
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Install security updates on Debian/Ubuntu
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
+        upgrade: dist
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Install security updates on RHEL-family (Fedora, CentOS, AlmaLinux)
+      ansible.builtin.yum:
         name: "*"
         state: latest
+        security: yes
+      when: ansible_facts.os_family == "RedHat"

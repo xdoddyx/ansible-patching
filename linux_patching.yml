@@ -4,30 +4,5 @@
   gather_facts: true
 
   tasks:
-    # ----- Debian / Ubuntu -----
-    - name: Ensure python3-apt is installed on Debian/Ubuntu
-      ansible.builtin.apt:
-        name: python3-apt
-        state: present
-      when: ansible_facts.os_family == "Debian"
-
-    - name: Install security updates (dist-upgrade) on Debian/Ubuntu
-      ansible.builtin.apt:
-        update_cache: true
-        cache_valid_time: 3600
-        upgrade: dist
-      when: ansible_facts.os_family == "Debian"
-
-    # ----- RHEL-family (Fedora, CentOS, AlmaLinux) -----
-    - name: Ensure dnf-plugins-core is present on RHEL-family
-      ansible.builtin.dnf:
-        name: dnf-plugins-core
-        state: present
-      when: ansible_facts.os_family == "RedHat"
-
-    - name: Install only security updates on RHEL-family
-      ansible.builtin.dnf:
-        security: yes
-        name: "*"
-        state: latest
-      when: ansible_facts.os_family == "RedHat"
+    - name: Example from an Ansible Playbook
+      ansible.builtin.ping:
